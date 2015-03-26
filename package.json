@@ -2,36 +2,13 @@
   "name": "grunt-kevoree",
   "description": "Automatically runs kevoree runtime (works like mvn kev:run plugin)",
   "version": "5.2.2",
-  "homepage": "https://github.com/kevoree/kevoree-js",
-  "author": {
-    "name": "Maxime Tricoire",
-    "email": "max.tricoire@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/kevoree/kevoree-js.git"
-  },
-  "bugs": {
-    "url": "https://github.com/kevoree/kevoree-js/issues"
-  },
-  "licenses": [
-    {
-      "type": "LGPL-3.0",
-      "url": "https://github.com/kevoree/kevoree-js/blob/master/LICENSE"
-    }
-  ],
-  "engines": {
-    "node": ">= 0.8.0"
-  },
+  "author": "Maxime Tricoire <max.tricoire@gmail.com>",
   "scripts": {
     "test": "grunt test"
   },
   "devDependencies": {
     "grunt-contrib-jshint": "~0.10.0",
     "grunt-contrib-clean": "~0.6.0",
-    "grunt": "~0.4.5"
-  },
-  "peerDependencies": {
     "grunt": "~0.4.5"
   },
   "keywords": [
@@ -49,5 +26,14 @@
     "kevoree-resolvers": "^2.0.2",
     "npm": "^2.2.0",
     "npmi": "^1.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kevoree/grunt-kevoree.git"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/kevoree/grunt-kevoree/issues"
+  },
+  "homepage": "https://github.com/kevoree/grunt-kevoree"
 }
