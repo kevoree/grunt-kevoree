@@ -15,7 +15,8 @@ var kevoree       = require('kevoree-library').org.kevoree,
     async         = require('async'),
     path          = require('path'),
     npmi          = require('npmi'),
-    npm           = require('npm');
+    npm           = require('npm'),
+    serveStatic   = require('../lib/serve-static');
 
 module.exports = function(grunt) {
 
@@ -31,7 +32,12 @@ module.exports = function(grunt) {
             kevscript: path.resolve('kevs/main.kevs'),
             modulesPath: path.resolve('.deploy_units'),
             mergeLocalLibraries: [],
-            logLevel: 'debug'
+            logLevel: 'debug',
+            browserOptions: {
+                port: 59000,
+                path: path.resolve('browser')
+            },
+            browserReady: false
         });
 
         switch (options.logLevel) {
@@ -163,6 +169,12 @@ module.exports = function(grunt) {
                                            grunt.file.delete(modulePath);
                                            grunt.log.ok('Delete old module: ' + path.relative(process.cwd(), modulePath)['blue']);
                                        }
+                                   }
+
+                                   if (options.browserReady) {
+                                       // serve static file './browser/*' for the browser runtime
+                                       serveStatic(options.browserOptions);
+                                       grunt.log.ok('Starting-up http-server, serving '+path.relative(process.cwd(), options.browserOptions.path)['blue']+' at '+'0.0.0.0:'['blue']+(options.browserOptions.port+'')['blue']);
                                    }
 
                                    var Kevoree = require('kevoree-nodejs-runtime'),
