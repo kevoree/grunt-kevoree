@@ -89,7 +89,7 @@ module.exports = function(grunt) {
         var compare = factory.createModelCompare();
 
         var npmResolver = new NPMResolver(options.modulesPath, logger),
-            kevsEngine  = new KevScript({ resolvers: { npm: npmResolver } });
+            kevsEngine  = new KevScript();
 
         var kevscriptContent = grunt.file.read(options.kevscript);
 
