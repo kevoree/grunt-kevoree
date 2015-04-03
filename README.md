@@ -149,5 +149,20 @@ If set, `grunt-kevoree` will not delete the old deploy unit for the current modu
 grunt kevoree --no-reinstall
 ```
 
+### Kevoree Browser Runtime - DevMode
+#### options.browserDevMode
+Type: `Boolean`
+Default value: `false`
+
+If set to `true`, `grunt-kevoree` will start to statically serve the given path in `options.mergeLocalLibraries` (+/browser), plus the one specified in `browserDevModeOptions.path`
+ 
+#### options.browserDevModeOptions
+Type: `Object`
+Default value: `{ port: 59000, path: './browser' }`
+
+Browser Runtime DevMode options  
+`port`: port of the static server
+`path`: one of the served directory (all `mergeLocalLibraries`/browser paths are added to this server too)
+
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
