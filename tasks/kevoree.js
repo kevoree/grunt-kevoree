@@ -33,11 +33,11 @@ module.exports = function(grunt) {
             modulesPath: path.resolve('.deploy_units'),
             mergeLocalLibraries: [],
             logLevel: 'debug',
-            browserOptions: {
+            browserDevModeOptions: {
                 port: 59000,
                 path: path.resolve('browser')
             },
-            browserReady: false
+            browserDevMode: false
         });
 
         switch (options.logLevel) {
@@ -171,10 +171,28 @@ module.exports = function(grunt) {
                                        }
                                    }
 
-                                   if (options.browserReady) {
+                                   if (options.browserDevMode) {
                                        // serve static file './browser/*' for the browser runtime
-                                       serveStatic(options.browserOptions);
-                                       grunt.log.ok('Starting-up http-server, serving '+path.relative(process.cwd(), options.browserOptions.path)['blue']+' at '+'0.0.0.0:'['blue']+(options.browserOptions.port+'')['blue']);
+                                       try {
+                                           var serveStaticOptions = {
+                                               port: options.browserDevModeOptions.port,
+                                               paths: [options.browserDevModeOptions.path]
+                                                   .concat(options.mergeLocalLibraries.map(function (libToMergePath) {
+                                                       return path.resolve(libToMergePath, 'browser');
+                                                   }))
+                                           };
+                                           serveStatic(serveStaticOptions);
+                                           var servedPaths = '';
+                                           serveStaticOptions.paths.forEach(function (p, i) {
+                                               servedPaths += path.relative(process.cwd(), p);
+                                               if (i < serveStaticOptions.paths.length-1) {
+                                                   servedPaths += ', ';
+                                               }
+                                           });
+                                           grunt.log.ok('Starting-up http-server, serving '+servedPaths['blue']+' at '+'0.0.0.0:'['blue']+(serveStaticOptions.port+'')['blue']);
+                                       } catch (err) {
+                                           grunt.fail.fatal('"grunt-kevoree" unable to start Browser DevMode local registry\n'+err.stack);
+                                       }
                                    }
 
                                    var Kevoree = require('kevoree-nodejs-runtime'),
