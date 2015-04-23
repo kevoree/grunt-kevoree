@@ -139,96 +139,92 @@ module.exports = function(grunt) {
             });
 
             async.series(mergeTasks, function (err) {
-               if (err) {
-                   grunt.fail.fatal(err.message);
-                   done();
-               }  else {
-                   kevsEngine.parse(kevscriptContent, contextModel, function (err, model) {
-                       if (err) {
-                           grunt.fail.fatal('"grunt-kevoree" unable to parse KevScript\n'+err.message);
-                           done();
-                       } else {
-                           // install specified kevoree-nodejs-runtime version
-                           var runtimeOptions = {
-                               name: 'kevoree-nodejs-runtime',
-                               version: options.version,
-                               path: path.resolve(__dirname, '..')
-                           };
+                if (err) {
+                    grunt.fail.fatal(err.message);
+                    done();
+                }  else {
+                    kevsEngine.parse(kevscriptContent, contextModel, function (err, model) {
+                        if (err) {
+                            grunt.fail.fatal('"grunt-kevoree" unable to parse KevScript\n'+err.message);
+                            done();
+                        } else {
+                            // install specified kevoree-nodejs-runtime version
+                            var runtimeOptions = {
+                                name: 'kevoree-nodejs-runtime',
+                                version: options.version,
+                                path: path.resolve(__dirname, '..')
+                            };
 
-                           npmi(runtimeOptions, function (err) {
-                               if (err) {
-                                   grunt.fail.fatal('"grunt-kevoree" unable to resolve kevoree-nodejs-runtime@'+options.runtime+'\n'+err.message);
-                                   done();
-                                   process.exit(1);
-                               } else {
-                                   var noReinstall = grunt.option('no-reinstall');
-                                   if (!noReinstall) {
-                                       var pkg = grunt.file.readJSON('package.json'),
-                                           modulePath = path.resolve(options.modulesPath, 'node_modules', pkg.name);
-                                       if (grunt.file.exists(modulePath)) {
-                                           grunt.file.delete(modulePath);
-                                           grunt.log.ok('Delete old module: ' + path.relative(process.cwd(), modulePath)['blue']);
-                                       }
-                                   }
+                            npmi(runtimeOptions, function (err) {
+                                if (err) {
+                                    grunt.fail.fatal('"grunt-kevoree" unable to resolve kevoree-nodejs-runtime@'+options.runtime+'\n'+err.message);
+                                    done();
+                                    process.exit(1);
+                                } else {
+                                    var noReinstall = grunt.option('no-reinstall');
+                                    if (!noReinstall) {
+                                        var pkg = grunt.file.readJSON('package.json'),
+                                            modulePath = path.resolve(options.modulesPath, 'node_modules', pkg.name);
+                                        if (grunt.file.exists(modulePath)) {
+                                            grunt.file.delete(modulePath);
+                                            grunt.log.ok('Delete old module: ' + path.relative(process.cwd(), modulePath)['blue']);
+                                        }
+                                    }
 
-                                   if (options.browserDevMode) {
-                                       // serve static file './browser/*' for the browser runtime
-                                       try {
-                                           var serveStaticOptions = {
-                                               port: options.browserDevModeOptions.port,
-                                               paths: [options.browserDevModeOptions.path]
-                                                   .concat(options.mergeLocalLibraries.map(function (libToMergePath) {
-                                                       return path.resolve(libToMergePath, 'browser');
-                                                   }))
-                                           };
-                                           serveStatic(serveStaticOptions);
-                                           var servedPaths = '';
-                                           serveStaticOptions.paths.forEach(function (p, i) {
-                                               servedPaths += path.relative(process.cwd(), p);
-                                               if (i < serveStaticOptions.paths.length-1) {
-                                                   servedPaths += ', ';
-                                               }
-                                           });
-                                           grunt.log.ok('Starting-up http-server, serving '+servedPaths['blue']+' at '+'0.0.0.0:'['blue']+(serveStaticOptions.port+'')['blue']);
-                                       } catch (err) {
-                                           grunt.fail.fatal('"grunt-kevoree" unable to start Browser DevMode local registry\n'+err.stack);
-                                       }
-                                   }
+                                    if (options.browserDevMode) {
+                                        // serve static file './browser/*' for the browser runtime
+                                        try {
+                                            var serveStaticOptions = {
+                                                port: options.browserDevModeOptions.port,
+                                                paths: [options.browserDevModeOptions.path]
+                                                    .concat(options.mergeLocalLibraries.map(function (libToMergePath) {
+                                                        return path.resolve(libToMergePath, 'browser');
+                                                    }))
+                                            };
+                                            var servedPaths = serveStatic(serveStaticOptions);
+                                            grunt.log.ok('Browser dev-mode server started at '+'0.0.0.0:'['blue']+(serveStaticOptions.port+'')['blue']+' and serving:');
+                                            servedPaths.forEach(function (servedPath) {
+                                                grunt.log.writeln('    - '+servedPath);
+                                            });
+                                        } catch (err) {
+                                            grunt.fail.fatal('"grunt-kevoree" unable to start Browser DevMode local registry\n'+err.stack);
+                                        }
+                                    }
 
-                                   var Kevoree = require('kevoree-nodejs-runtime'),
-                                       runtime = new Kevoree(options.modulesPath, logger, npmResolver);
+                                    var Kevoree = require('kevoree-nodejs-runtime'),
+                                        runtime = new Kevoree(options.modulesPath, logger, npmResolver);
 
-                                   var errorHandler = function () {
-                                       grunt.log.writeln();
-                                       grunt.fail.fatal('"grunt-kevoree" unable to bootstrap platform. Shutting down.');
-                                       runtime.stop();
-                                   };
+                                    var errorHandler = function () {
+                                        grunt.log.writeln();
+                                        grunt.fail.fatal('"grunt-kevoree" unable to bootstrap platform. Shutting down.');
+                                        runtime.stop();
+                                    };
 
-                                   runtime.on('started', function () {
-                                       runtime.once('deployError', errorHandler);
-                                       runtime.once('adaptationError', errorHandler);
-                                       runtime.deploy(model);
-                                   });
+                                    runtime.on('started', function () {
+                                        runtime.once('deployError', errorHandler);
+                                        runtime.once('adaptationError', errorHandler);
+                                        runtime.deploy(model);
+                                    });
 
-                                   runtime.once('deployed', function deployHandler() {
-                                       grunt.log.ok('Bootstrap model deployed successfully');
-                                       runtime.off('deployed', deployHandler);
-                                       runtime.off('deployError', errorHandler);
-                                       runtime.off('adaptationError', errorHandler);
-                                   });
+                                    runtime.once('deployed', function deployHandler() {
+                                        grunt.log.ok('Bootstrap model deployed successfully');
+                                        runtime.off('deployed', deployHandler);
+                                        runtime.off('deployError', errorHandler);
+                                        runtime.off('adaptationError', errorHandler);
+                                    });
 
-                                   runtime.on('stopped', function () {
-                                       done();
-                                   });
+                                    runtime.on('stopped', function () {
+                                        done();
+                                    });
 
-                                   var runtimePath = path.resolve(runtimeOptions.path, 'node_modules', 'kevoree-nodejs-runtime', 'package.json');
-                                   grunt.log.ok('Starting runtime: ' + 'v'['blue'] + require(runtimePath).version['blue']);
-                                   runtime.start(options.node);
-                               }
-                           });
-                       }
-                   });
-               }
+                                    var runtimePath = path.resolve(runtimeOptions.path, 'node_modules', 'kevoree-nodejs-runtime', 'package.json');
+                                    grunt.log.ok('Starting runtime: ' + 'v'['blue'] + require(runtimePath).version['blue']);
+                                    runtime.start(options.node);
+                                }
+                            });
+                        }
+                    });
+                }
             });
 
         } catch (err) {
