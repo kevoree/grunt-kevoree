@@ -191,6 +191,7 @@ module.exports = function(grunt) {
                                         }
                                     }
 
+                                    process.env.KEVOREE_RUNTIME = 'dev';
                                     var Kevoree = require('kevoree-nodejs-runtime'),
                                         runtime = new Kevoree(options.modulesPath, logger, npmResolver);
 
