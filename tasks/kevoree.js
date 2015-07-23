@@ -37,7 +37,8 @@ module.exports = function(grunt) {
                 port: 59000,
                 path: path.resolve('browser')
             },
-            browserDevMode: false
+            browserDevMode: false,
+            ctxVars: {}
         });
 
         switch (options.logLevel) {
@@ -143,7 +144,7 @@ module.exports = function(grunt) {
                     grunt.fail.fatal(err.message);
                     done();
                 }  else {
-                    kevsEngine.parse(kevscriptContent, contextModel, function (err, model) {
+                    kevsEngine.parse(kevscriptContent, contextModel, options.ctxVars, function (err, model) {
                         if (err) {
                             grunt.fail.fatal('"grunt-kevoree" unable to parse KevScript\n'+err.message);
                             done();

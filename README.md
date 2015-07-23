@@ -96,13 +96,32 @@ Available values are `(all|debug|info|warn|error|quiet)`
 
 #### kevscript
 Type: `String`  
-Default value: `none`  **this argument is mandatory, whether from command-line or from Gruntfile.js options**
+Default value: `kevs/main.kevs`  **this argument is mandatory, whether from command-line or from Gruntfile.js options**
 
 Path that leads to your KevScript file in order to create the Kevoree model to bootstrap on.  
 KevScript file can be specified from the command-line (if provided, it will be used instead of the file given in the Gruntfile.js)  
 
 ```sh
 grunt kevoree --kevscript=/path/to/my/model.kevs
+```
+
+#### ctxVars
+Type: `Object`  
+Default value: `{}`
+
+If set, `grunt-kevoree` will use the given object as the context variables for the KevScript interpretor.  
+Example:  
+```js
+options: {
+  ctxVars: {
+    'NODE_NAME': 'myNode'
+  }
+}
+```
+This will allow you to use `%NODE_NAME%` that will be converted to `myNode` within your KevScript files:
+```kevs
+add %NODE_NAME% : JavascriptNode
+add %NODE_NAME%.foo : Ticker
 ```
 
 ### Command-line arguments
@@ -137,16 +156,6 @@ If set, `grunt-kevoree` will install the specified `kevoree-nodejs-runtime` vers
 
 ```sh
 grunt kevoree --runtime=5.1.0
-```
-
-#### no-reinstall
-Type: `Boolean`
-Default value: `false`
-
-If set, `grunt-kevoree` will not delete the old deploy unit for the current module.  
-
-```sh
-grunt kevoree --no-reinstall
 ```
 
 ### Kevoree Browser Runtime - DevMode
