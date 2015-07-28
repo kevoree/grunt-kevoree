@@ -76,7 +76,7 @@ module.exports = function(grunt) {
 
         var runtimeVers = grunt.option('runtime');
         if (runtimeVers) {
-            options.version = runtimeVers;
+            options.runtime = runtimeVers;
         }
 
         var kevscript = grunt.option('kevscript');
@@ -152,7 +152,7 @@ module.exports = function(grunt) {
                             // install specified kevoree-nodejs-runtime version
                             var runtimeOptions = {
                                 name: 'kevoree-nodejs-runtime',
-                                version: options.version,
+                                version: options.runtime,
                                 path: path.resolve(__dirname, '..')
                             };
 
