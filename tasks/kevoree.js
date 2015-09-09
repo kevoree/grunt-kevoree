@@ -106,15 +106,17 @@ module.exports = function(grunt) {
       var model = grunt.file.read('kevlib.json');
       var contextModel = loader.loadModelFromString(model).get(0);
 
-      var modulesPath = path.resolve(options.modulesPath, 'node_modules');
-      var dirs = fs.readdirSync(modulesPath);
-      dirs.forEach(function (dir) {
-        try {
-          var kevlibStr = fs.readFileSync(path.resolve(modulesPath, dir, 'kevlib.json'), { encoding: 'utf8' });
-          var kevlib = loader.loadModelFromString(kevlibStr).get(0);
-          compare.merge(contextModel, kevlib).applyOn(contextModel);
-        } catch (err) { /* ignore */ }
-      });
+      try {
+        var modulesPath = path.resolve(options.modulesPath, 'node_modules');
+        var dirs = fs.readdirSync(modulesPath);
+        dirs.forEach(function (dir) {
+          try {
+            var kevlibStr = fs.readFileSync(path.resolve(modulesPath, dir, 'kevlib.json'), { encoding: 'utf8' });
+            var kevlib = loader.loadModelFromString(kevlibStr).get(0);
+            compare.merge(contextModel, kevlib).applyOn(contextModel);
+          } catch (err) { /* ignore */ }
+        });
+      } catch (err) { /* ignore */ }
 
       var mergeTasks = [];
       options.mergeLocalLibraries.forEach(function(localLibPath) {
