@@ -218,16 +218,9 @@ module.exports = function(grunt) {
                   };
 
                   runtime.on('started', function()  {
-                    runtime.once('deployError', errorHandler);
-                    runtime.once('adaptationError', errorHandler);
-                    runtime.deploy(model);
-                  });
-
-                  runtime.once('deployed', function deployHandler() {
-                    grunt.log.ok('Bootstrap model deployed successfully');
-                    runtime.off('deployed', deployHandler);
-                    runtime.off('deployError', errorHandler);
-                    runtime.off('adaptationError', errorHandler);
+                    runtime.deploy(model, function () {
+                        grunt.log.ok('Bootstrap model deployed successfully');
+                    });
                   });
 
                   runtime.on('stopped', function() {
