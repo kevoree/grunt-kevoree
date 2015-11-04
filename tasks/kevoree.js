@@ -15,7 +15,7 @@ var kevoree = require('kevoree-library').org.kevoree,
     async = require('async'),
     path = require('path'),
     fs = require('fs'),
-    execNpmInstall = require('exec-npm-install'),
+    execNpm = require('exec-npm'),
     serveStatic = require('../lib/serve-static'),
     npmLink = require('../lib/npm-link');
 
@@ -150,12 +150,9 @@ module.exports = function(grunt) {
                             done();
                         } else {
                             // install specified kevoree-nodejs-runtime version
-                            var runtimeOptions = {
-                                modules: ['kevoree-nodejs-runtime@' + options.runtime],
-                                prefix: path.resolve(__dirname, '..')
-                            };
-
-                            execNpmInstall(runtimeOptions, function(err) {
+                            var runtimeInstallPath = path.resolve(__dirname, '..');
+                            var cmd = ['install', 'kevoree-nodejs-runtime@' + options.runtime, '--prefix='+ runtimeInstallPath];
+                            execNpm(cmd, { stdio: 'inherit' }, function(err) {
                                 if (err) {
                                     grunt.fail.fatal('"grunt-kevoree" unable to resolve kevoree-nodejs-runtime@' + options.runtime + '\n' + err.message);
                                     done();
@@ -202,7 +199,7 @@ module.exports = function(grunt) {
                                             done();
                                         });
 
-                                        var runtimePath = path.resolve(runtimeOptions.prefix, 'node_modules', 'kevoree-nodejs-runtime', 'package.json');
+                                        var runtimePath = path.resolve(runtimeInstallPath, 'node_modules', 'kevoree-nodejs-runtime', 'package.json');
                                         grunt.log.ok('Starting runtime: ' + 'v' ['blue'] + require(runtimePath).version['blue']);
                                         runtime.start(options.node);
                                     };
