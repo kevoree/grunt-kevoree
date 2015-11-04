@@ -1,7 +1,7 @@
 {
   "name": "grunt-kevoree",
   "description": "Automatically runs kevoree runtime (works like mvn kev:run plugin)",
-  "version": "5.8.0",
+  "version": "5.8.1",
   "author": "Maxime Tricoire <max.tricoire@gmail.com>",
   "scripts": {
     "test": "grunt test"
@@ -26,6 +26,8 @@
     "kevoree-kevscript": "^3.0.2",
     "kevoree-library": "^5.0.4",
     "kevoree-resolvers": "^3",
+    "latest-version": "^2.0.0",
+    "mkdirp": "^0.5.1",
     "serve-static": "^1.9.2"
   },
   "repository": {
