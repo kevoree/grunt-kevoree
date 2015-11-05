@@ -154,7 +154,7 @@ module.exports = function(grunt) {
                                 var pkg = grunt.file.readJSON('package.json'),
                                     modulePath = path.resolve(options.modulesPath, 'node_modules', pkg.name);
                                 if (!grunt.file.exists(modulePath)) {
-                                    npmLink(pkg.name, process.cwd(), options.modulesPath, function (err) {
+                                    npmLink(pkg.name, process.cwd(), path.resolve(options.modulesPath, 'node_modules'), function (err) {
                                         if (err) {
                                             grunt.fail.fatal('"grunt-kevoree" unable to link ' + pkg.name + ' in '+ options.modulesPath);
                                             done();
