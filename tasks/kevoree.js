@@ -1,249 +1,101 @@
 /*
  * grunt-kevoree
- * https://github.com/kevoree/kevoree-js
+ * https://github.com/kevoree/grunt-kevoree
  *
- * Copyright (c) 2014 Maxime Tricoire
+ * Copyright (c) 2016 Maxime Tricoire
  * Licensed under the LGPL-3.0 license.
  */
 
 'use strict';
 
-var kevoree = require('kevoree-library').org.kevoree,
-  KevoreeLogger = require('kevoree-commons').KevoreeLogger,
-  NPMResolver = require('kevoree-resolvers').NPMResolver,
-  KevScript = require('kevoree-kevscript'),
-  async = require('async'),
-  path = require('path'),
-  fs = require('fs'),
-  ied = require('ied'),
-  serveStatic = require('../lib/serve-static'),
-  npmLink = require('../lib/npm-link'),
-  exists = require('../lib/exists');
+var path = require('path'),
+  nconf = require('kevoree-nconf'),
+  Logger = require('kevoree-commons').Logger,
+  kevoree = require('kevoree-library'),
+  Resolvers = require('kevoree-resolvers'),
+  KevScript = require('kevoree-kevscript');
 
-module.exports = function(grunt) {
+var installRuntime = require('../lib/install-runtime');
 
-  var logger = new KevoreeLogger('RuntimeGruntTask');
+var HOME_DIR = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
+var KREGRC_PATH = path.resolve(HOME_DIR, '.kregrc.json');
 
-  grunt.registerTask('kevoree', 'Automatically runs kevoree runtime (works like mvn kev:run plugin)', function() {
+module.exports = function (grunt) {
+
+  grunt.registerMultiTask('kevoree', 'Automatically runs Kevoree runtime (works like the Maven plugin "mvn kev:run")', function () {
     var done = this.async();
 
-    // Merge task-specific and/or target-specific options with these defaults.
     var options = this.options({
+      nodeName: 'node0',
       runtime: 'latest',
-      node: 'node0',
-      kevscript: path.resolve('kevs/main.kevs'),
-      modulesPath: path.resolve('.deploy_units'),
-      mergeLocalLibraries: [],
-      logLevel: 'debug',
-      browserDevModeOptions: {
-        port: 59000,
-        path: path.resolve('browser')
-      },
-      browserDevMode: false,
+      modulesPath: path.join(HOME_DIR, '.kevoree'),
+      localModel: 'kevlib.json',
+      kevscript: path.join('kevs', 'main.kevs'),
       ctxVars: {}
     });
 
-    switch (options.logLevel) {
-      case 'all':
-        logger.setLevel(KevoreeLogger.ALL);
-        break;
+    Object.keys(options).forEach(function (key) {
+      options[key] = grunt.option(key) || options[key];
+    });
 
-      case 'debug':
-        logger.setLevel(KevoreeLogger.DEBUG);
-        break;
+    nconf.argv({
+      'registry.ssl': {
+        type: 'boolean'
+      }
+    }).file(KREGRC_PATH).use('memory');
 
-      default:
-      case 'info':
-        logger.setLevel(KevoreeLogger.INFO);
-        break;
+    // install the Kevoree NodeJS runtime
+    installRuntime(grunt, options, function (err) {
+      if (err) {
+        done(err);
+      } else {
+        grunt.log.writeln();
 
-      case 'warn':
-        logger.setLevel(KevoreeLogger.WARN);
-        break;
+        // init Kevoree tools
+        var factory = new kevoree.factory.DefaultKevoreeFactory();
+        var loader = factory.createJSONLoader();
 
-      case 'error':
-        logger.setLevel(KevoreeLogger.ERROR);
-        break;
-
-      case 'quiet':
-        logger.setLevel(KevoreeLogger.QUIET);
-        break;
-    }
-
-    var nodeName = grunt.option('node');
-    if (nodeName) {
-      options.node = nodeName;
-    }
-    grunt.log.ok('Platform node name: ' + options.node['blue']);
-
-    var runtimeVers = grunt.option('runtime');
-    if (runtimeVers) {
-      options.runtime = runtimeVers;
-    }
-
-    var kevscript = grunt.option('kevscript');
-    if (kevscript) {
-      options.kevscript = path.resolve('kevs', kevscript);
-    }
-
-    options.modulesPath = path.resolve(options.modulesPath, options.node);
-
-    var bootstrapScriptPath = path.relative(process.cwd(), options.kevscript);
-    if (bootstrapScriptPath.startsWith(path.join('..', '..', '..'))) {
-      bootstrapScriptPath = path.resolve(options.kevscript);
-    }
-    grunt.log.ok('Bootstrap script: ' + bootstrapScriptPath['blue']);
-    var factory = new kevoree.factory.DefaultKevoreeFactory();
-    var loader = factory.createJSONLoader();
-    var compare = factory.createModelCompare();
-
-    var npmResolver = new NPMResolver(options.modulesPath, logger),
-      kevsEngine = new KevScript();
-
-    var kevscriptContent = grunt.file.read(options.kevscript);
-
-    try {
-      // getting current project kevlib.json model
-      var model = grunt.file.read('kevlib.json');
-      var contextModel = loader.loadModelFromString(model).get(0);
-
-      try {
-        var modulesPath = path.resolve(options.modulesPath, 'node_modules');
-        var dirs = fs.readdirSync(modulesPath);
-        dirs.forEach(function(dir) {
-          try {
-            var kevlibStr = fs.readFileSync(path.resolve(modulesPath, dir, 'kevlib.json'), {
-              encoding: 'utf8'
-            });
-            var kevlib = loader.loadModelFromString(kevlibStr).get(0);
-            compare.merge(contextModel, kevlib).applyOn(contextModel);
-          } catch (err) { /* ignore */ }
-        });
-      } catch (err) { /* ignore */ }
-
-      var mergeTasks = [];
-      options.mergeLocalLibraries.forEach(function(localLibPath) {
-        mergeTasks.push(function(cb) {
-          var localLibModel = grunt.file.read(path.resolve(localLibPath, 'kevlib.json'));
-          var model = loader.loadModelFromString(localLibModel).get(0);
-          compare.merge(contextModel, model).applyOn(contextModel);
-
-          var localLibPkg = JSON.parse(grunt.file.read(path.resolve(localLibPath, 'package.json')));
-          npmLink(localLibPkg.name, localLibPath, path.resolve(options.modulesPath), function(err) {
-            if (err) {
-              cb(new Error('"grunt-kevoree" unable to merge local library ' + localLibPkg.name + ' in ' + options.modulesPath));
-            } else {
-              grunt.log.ok('Merged local library: ' + localLibPkg.name['blue']);
-              cb();
-            }
-          });
-        });
-      });
-
-      async.series(mergeTasks, function(err) {
-        if (err) {
-          grunt.fail.fatal(err.message);
-          done();
-        } else {
-          kevsEngine.parse(kevscriptContent, contextModel, options.ctxVars, function(err, model) {
-            if (err) {
-              grunt.fail.fatal('"grunt-kevoree" unable to parse KevScript\n' + err.message);
-              done();
-            } else {
-              var linkModule = function() {
-                var pkg = grunt.file.readJSON('package.json'),
-                  modulePath = path.resolve(options.modulesPath, 'node_modules', pkg.name);
-                if (!grunt.file.exists(modulePath)) {
-                  npmLink(pkg.name, process.cwd(), path.resolve(options.modulesPath, 'node_modules'), function(err) {
-                    if (err) {
-                      grunt.fail.fatal('"grunt-kevoree" unable to link ' + pkg.name + ' in ' + options.modulesPath);
-                      done();
-                    } else {
-                      startRuntime();
-                    }
-                  });
-                } else {
-                  startRuntime();
-                }
-              };
-
-              var startRuntime = function() {
-                if (options.browserDevMode) {
-                  // serve static file './browser/*' for the browser runtime
-                  try {
-                    var serveStaticOptions = {
-                      port: options.browserDevModeOptions.port,
-                      paths: [options.browserDevModeOptions.path]
-                        .concat(options.mergeLocalLibraries.map(function(libToMergePath) {
-                          return path.resolve(libToMergePath, 'browser');
-                        }))
-                    };
-                    var servedPaths = serveStatic(serveStaticOptions);
-                    grunt.log.ok('Browser dev-mode server started at ' + '0.0.0.0:' ['blue'] + (serveStaticOptions.port + '')['blue'] + ' and serving:');
-                    servedPaths.forEach(function(servedPath) {
-                      grunt.log.writeln('    - ' + servedPath);
-                    });
-                  } catch (err) {
-                    grunt.fail.fatal('"grunt-kevoree" unable to start Browser DevMode local registry\n' + err.stack);
-                  }
-                }
-
-                process.env.KEVOREE_RUNTIME = 'dev';
-                var Kevoree = require('kevoree-nodejs-runtime'),
-                  runtime = new Kevoree(options.modulesPath, logger, npmResolver);
-
-                var errorHandler = function() {
-                  grunt.log.writeln();
-                  grunt.fail.fatal('"grunt-kevoree" unable to bootstrap platform. Shutting down.');
-                  runtime.stop();
-                };
-
-                runtime.on('started', function()  {
-                  runtime.deploy(model, function() {
-                    grunt.log.ok('Bootstrap model deployed successfully');
-                  });
-                });
-
-                runtime.on('stopped', function() {
-                  done();
-                });
-
-                var runtimePath = path.resolve(runtimeInstallPath, 'node_modules', 'kevoree-nodejs-runtime', 'package.json');
-                grunt.log.ok('Starting runtime: ' + 'v' ['blue'] + require(runtimePath).version['blue']);
-                runtime.start(options.node);
-              };
-
-              var runtimeInstallPath = path.resolve(__dirname, '..');
-              exists('kevoree-nodejs-runtime@' + options.runtime, runtimeInstallPath, function(err, exists) {
-                if (err) {
-
-                } else {
-                  if (!exists) {
-                    // install specified kevoree-nodejs-runtime version
-                    ied.installCmd(runtimeInstallPath, {
-                      _: [null, 'kevoree-nodejs-runtime@' + options.runtime]
-                    }, function(err) {
-                      if (err) {
-                        grunt.fail.fatal('"grunt-kevoree" unable to resolve kevoree-nodejs-runtime@' + options.runtime + '\n' + err.message);
-                        done();
-                        process.exit(1);
-                      } else {
-                        linkModule();
-                      }
-                    });
-                  } else {
-                    linkModule();
-                  }
-                }
-              });
-            }
-          });
+        var localModelStr = grunt.file.read(options.localModel);
+        var localModel;
+        try {
+          localModel = loader.loadModelFromString(localModelStr).get(0);
+        } catch (err) {
+          err.message = 'Unable to load ' + options.localModel;
+          done(err);
+          return;
         }
-      });
 
-    } catch (err) {
-      grunt.fail.fatal('"grunt-kevoree" unable to load Kevoree model kevlib.json\n' + err.message);
-      done();
-    }
+        // init more Kevoree tools
+        var logger = new Logger('Runtime');
+        var logLevel = nconf.get('log:level');
+        if (logLevel) {
+          // use command-line --log.level value if any
+          logger.setLevel(logLevel);
+        } else {
+          // default logLevel to DEBUG
+          logger.setLevel('DEBUG');
+        }
+        var kevs = new KevScript(logger, new KevScript.cache.MemoryCache());
+
+        var kevscript = grunt.file.read(options.kevscript);
+        kevs.parse(kevscript, localModel, options.ctxVars, function (err, model) {
+          if (err) {
+            done(err);
+          } else {
+            // init more and more Kevoree tools
+            var resolver = new Resolvers.NPMResolver(options.modulesPath, logger);
+            var Runtime = require('kevoree-nodejs-runtime');
+
+            var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
+            runtime.start(options.nodeName);
+            runtime.deploy(model, function (err) {
+              if (err) {
+                grunt.fail.fatal(err);
+              }
+            });
+          }
+        });
+      }
+    });
   });
 };

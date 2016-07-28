@@ -25,6 +25,10 @@ module.exports = function(grunt) {
         // Before generating any new files, remove any previously-created files.
         clean: {
             tests: ['tmp']
+        },
+
+        kevoree: {
+          default: {}
         }
     });
 
