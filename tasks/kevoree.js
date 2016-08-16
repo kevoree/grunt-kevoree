@@ -9,16 +9,17 @@
 'use strict';
 
 var path = require('path'),
-  nconf = require('kevoree-nconf'),
+  kConst = require('kevoree-const'),
+  config = require('tiny-conf'),
   Logger = require('kevoree-commons').Logger,
   kevoree = require('kevoree-library'),
   Resolvers = require('kevoree-resolvers'),
   KevScript = require('kevoree-kevscript');
 
-var installRuntime = require('../lib/install-runtime');
+require('tiny-conf-plugin-file')(config, kConst.CONFIG_PATH);
+require('tiny-conf-plugin-argv')(config);
 
-var HOME_DIR = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
-var KREGRC_PATH = path.resolve(HOME_DIR, '.kregrc.json');
+var installRuntime = require('../lib/install-runtime');
 
 module.exports = function (grunt) {
 
@@ -28,7 +29,7 @@ module.exports = function (grunt) {
     var options = this.options({
       nodeName: 'node0',
       runtime: 'latest',
-      modulesPath: path.join(HOME_DIR, '.kevoree'),
+      modulesPath: path.join(kConst.CONFIG_PATH, '..'),
       localModel: 'kevlib.json',
       kevscript: path.join('kevs', 'main.kevs'),
       ctxVars: {}
@@ -37,12 +38,6 @@ module.exports = function (grunt) {
     Object.keys(options).forEach(function (key) {
       options[key] = grunt.option(key) || options[key];
     });
-
-    nconf.argv({
-      'registry.ssl': {
-        type: 'boolean'
-      }
-    }).file(KREGRC_PATH).use('memory');
 
     // install the Kevoree NodeJS runtime
     installRuntime(grunt, options, function (err) {
@@ -67,7 +62,7 @@ module.exports = function (grunt) {
 
         // init more Kevoree tools
         var logger = new Logger('Runtime');
-        var logLevel = nconf.get('log:level');
+        var logLevel = config.get('log.level');
         if (logLevel) {
           // use command-line --log.level value if any
           logger.setLevel(logLevel);
