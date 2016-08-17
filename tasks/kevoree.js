@@ -20,6 +20,7 @@ require('tiny-conf-plugin-file')(config, kConst.CONFIG_PATH);
 require('tiny-conf-plugin-argv')(config);
 
 var installRuntime = require('../lib/install-runtime');
+var installModule = require('../lib/install-module');
 
 module.exports = function (grunt) {
 
@@ -44,48 +45,54 @@ module.exports = function (grunt) {
       if (err) {
         done(err);
       } else {
-        grunt.log.writeln();
-
-        // init Kevoree tools
-        var factory = new kevoree.factory.DefaultKevoreeFactory();
-        var loader = factory.createJSONLoader();
-
-        var localModelStr = grunt.file.read(options.localModel);
-        var localModel;
-        try {
-          localModel = loader.loadModelFromString(localModelStr).get(0);
-        } catch (err) {
-          err.message = 'Unable to load ' + options.localModel;
-          done(err);
-          return;
-        }
-
-        // init more Kevoree tools
-        var logger = new Logger('Runtime');
-        var logLevel = config.get('log.level');
-        if (logLevel) {
-          // use command-line --log.level value if any
-          logger.setLevel(logLevel);
-        } else {
-          // default logLevel to DEBUG
-          logger.setLevel('DEBUG');
-        }
-        var kevs = new KevScript(logger, new KevScript.cache.MemoryCache());
-
-        var kevscript = grunt.file.read(options.kevscript);
-        kevs.parse(kevscript, localModel, options.ctxVars, function (err, model) {
+        installModule(grunt, options, function (err) {
           if (err) {
             done(err);
           } else {
-            // init more and more Kevoree tools
-            var resolver = new Resolvers.NPMResolver(options.modulesPath, logger);
-            var Runtime = require('kevoree-nodejs-runtime');
+            grunt.log.writeln();
 
-            var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
-            runtime.start(options.nodeName);
-            runtime.deploy(model, function (err) {
+            // init Kevoree tools
+            var factory = new kevoree.factory.DefaultKevoreeFactory();
+            var loader = factory.createJSONLoader();
+
+            var localModelStr = grunt.file.read(options.localModel);
+            var localModel;
+            try {
+              localModel = loader.loadModelFromString(localModelStr).get(0);
+            } catch (err) {
+              err.message = 'Unable to load ' + options.localModel;
+              done(err);
+              return;
+            }
+
+            // init more Kevoree tools
+            var logger = new Logger('Runtime');
+            var logLevel = config.get('log.level');
+            if (logLevel) {
+              // use command-line --log.level value if any
+              logger.setLevel(logLevel);
+            } else {
+              // default logLevel to DEBUG
+              logger.setLevel('DEBUG');
+            }
+            var kevs = new KevScript(logger, new KevScript.cache.MemoryCache());
+
+            var kevscript = grunt.file.read(options.kevscript);
+            kevs.parse(kevscript, localModel, options.ctxVars, function (err, model) {
               if (err) {
-                grunt.fail.fatal(err);
+                done(err);
+              } else {
+                // init more and more Kevoree tools
+                var resolver = new Resolvers.NPMResolver(options.modulesPath, logger);
+                var Runtime = require('kevoree-nodejs-runtime');
+
+                var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
+                runtime.start(options.nodeName);
+                runtime.deploy(model, function (err) {
+                  if (err) {
+                    grunt.fail.fatal(err);
+                  }
+                });
               }
             });
           }
