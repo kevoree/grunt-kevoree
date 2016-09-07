@@ -33,7 +33,8 @@ module.exports = function (grunt) {
       modulesPath: path.join(kConst.CONFIG_PATH, '..'),
       localModel: 'kevlib.json',
       kevscript: path.join('kevs', 'main.kevs'),
-      ctxVars: {}
+      ctxVars: {},
+      skipIntegrityCheck: false
     });
 
     Object.keys(options).forEach(function (key) {
@@ -75,15 +76,14 @@ module.exports = function (grunt) {
               // default logLevel to DEBUG
               logger.setLevel('DEBUG');
             }
-            var kevs = new KevScript(logger, new KevScript.cache.MemoryCache());
-
+            var kevs = new KevScript(logger);
             var kevscript = grunt.file.read(options.kevscript);
             kevs.parse(kevscript, localModel, options.ctxVars, function (err, model) {
               if (err) {
                 done(err);
               } else {
                 // init more and more Kevoree tools
-                var resolver = new Resolvers.NPMResolver(options.modulesPath, logger);
+                var resolver = new Resolvers.NPMResolver(options.modulesPath, logger, options.skipIntegrityCheck);
                 var Runtime = require('kevoree-nodejs-runtime');
 
                 var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
