@@ -88,11 +88,7 @@ module.exports = function (grunt) {
 
                 var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
                 runtime.start(options.nodeName);
-                runtime.deploy(model, function (err) {
-                  if (err) {
-                    grunt.fail.fatal(err);
-                  }
-                });
+                runtime.deploy(model);
               }
             });
           }
