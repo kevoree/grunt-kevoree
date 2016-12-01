@@ -87,6 +87,11 @@ module.exports = function (grunt) {
                 var Runtime = require('kevoree-cli');
 
                 var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
+
+                runtime.on('stopped', function () {
+                  process.exit(0);
+                });
+
                 runtime.start(options.nodeName);
                 runtime.deploy(model);
               }
