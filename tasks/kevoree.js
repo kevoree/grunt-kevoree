@@ -84,7 +84,7 @@ module.exports = function (grunt) {
               } else {
                 // init more and more Kevoree tools
                 var resolver = new Resolvers.NPMResolver(options.modulesPath, logger, options.skipIntegrityCheck);
-                var Runtime = require('kevoree-nodejs-runtime');
+                var Runtime = require('kevoree-cli');
 
                 var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
                 runtime.start(options.nodeName);

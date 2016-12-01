@@ -33,3 +33,5 @@ npm-debug.log
 
 # Kevoree JS
 kevlib.json
+
+yarn.lock
