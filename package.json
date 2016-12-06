@@ -1,7 +1,7 @@
 {
   "name": "grunt-kevoree",
   "description": "Automatically runs kevoree runtime (works like mvn kev:run plugin)",
-  "version": "5.9.1",
+  "version": "5.9.2-alpha",
   "author": "Maxime Tricoire <max.tricoire@gmail.com>",
   "scripts": {
     "test": "grunt test"
@@ -32,7 +32,8 @@
     "ora": "^0.3.0",
     "tiny-conf": "^1.0.0",
     "tiny-conf-plugin-argv": "^1.0.0",
-    "tiny-conf-plugin-file": "^1.0.0"
+    "tiny-conf-plugin-file": "^1.0.0",
+    "which": "^1.2.12"
   },
   "repository": {
     "type": "git",
