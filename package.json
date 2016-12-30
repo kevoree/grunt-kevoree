@@ -1,7 +1,7 @@
 {
   "name": "grunt-kevoree",
   "description": "Automatically runs kevoree runtime (works like mvn kev:run plugin)",
-  "version": "5.9.5",
+  "version": "5.9.6",
   "author": "Maxime Tricoire <max.tricoire@gmail.com>",
   "scripts": {
     "test": "grunt test"
@@ -24,7 +24,7 @@
     "indent-string": "^3.0.0",
     "kevoree-commons": "^3.0.0",
     "kevoree-const": "^1.0.1",
-    "kevoree-hash": "^2.0.0",
+    "kevoree-hash": "^3.0.0",
     "kevoree-kevscript": "^4.0.0",
     "kevoree-library": "^5.0.10",
     "kevoree-resolvers": "^4.0.0",
@@ -44,10 +44,12 @@
     "url": "https://github.com/kevoree/grunt-kevoree/issues"
   },
   "homepage": "https://github.com/kevoree/grunt-kevoree",
-	"eslintConfig": {
-		"env": {
-			"node": true
-		},
-		"extends": ["eslint:recommended"]
-	}
+  "eslintConfig": {
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ]
+  }
 }
