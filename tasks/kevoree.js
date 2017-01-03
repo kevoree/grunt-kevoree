@@ -41,6 +41,18 @@ module.exports = function(grunt) {
 			options[key] = grunt.option(key) || options[key];
 		});
 
+		var ctxVarOpt = grunt.option('ctxVar');
+		if (ctxVarOpt) {
+			// "ctxVar" as command-line argument
+			[].concat(ctxVarOpt).forEach(function (arg) {
+				var splitted = arg.split('=');
+				var key = splitted[0];
+				var value = splitted[1];
+				options.ctxVars[key] = value;
+			});
+			console.log('ctxVar', options.ctxVars); // eslint-disable-line
+		}
+
 		// install the Kevoree NodeJS runtime
 		installRuntime(grunt, options, function(err) {
 			if (err) {
@@ -92,7 +104,14 @@ module.exports = function(grunt) {
 									process.exit(0);
 								});
 
-								runtime.start(options.nodeName);
+								var nodeName = options.nodeName;
+								if (nodeName.startsWith('%%') && nodeName.endsWith('%%')) {
+									nodeName = options.ctxVars[nodeName.substring(2, nodeName.length - 2)];
+								}
+								if (nodeName.startsWith('%') && nodeName.endsWith('%')) {
+									nodeName = options.ctxVars[nodeName.substring(1, nodeName.length - 1)];
+								}
+								runtime.start(nodeName);
 								runtime.deploy(model);
 							}
 						});
