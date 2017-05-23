@@ -8,13 +8,13 @@
 
 'use strict';
 
-var path = require('path'),
-	kConst = require('kevoree-const'),
-	config = require('tiny-conf'),
-	Logger = require('kevoree-commons').Logger,
-	kevoree = require('kevoree-library'),
-	Resolvers = require('kevoree-resolvers'),
-	KevScript = require('kevoree-kevscript');
+var path = require('path');
+var kConst = require('kevoree-const');
+var config = require('tiny-conf');
+var Logger = require('kevoree-commons').Logger;
+var kevoree = require('kevoree-library');
+var Resolvers = require('kevoree-resolvers');
+var KevScript = require('kevoree-kevscript');
 
 require('tiny-conf-plugin-file')(config, kConst.CONFIG_PATH);
 require('tiny-conf-plugin-argv')(config);
@@ -22,9 +22,9 @@ require('tiny-conf-plugin-argv')(config);
 var installRuntime = require('../lib/install-runtime');
 var installModule = require('../lib/install-module');
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
-	grunt.registerMultiTask('kevoree', 'Automatically runs Kevoree runtime (works like the Maven plugin "mvn kev:run")', function() {
+	grunt.registerMultiTask('kevoree', 'Automatically runs Kevoree runtime (works like the Maven plugin "mvn kev:run")', function () {
 		var done = this.async();
 
 		var options = this.options({
@@ -37,7 +37,7 @@ module.exports = function(grunt) {
 			skipIntegrityCheck: false
 		});
 
-		Object.keys(options).forEach(function(key) {
+		Object.keys(options).forEach(function (key) {
 			options[key] = grunt.option(key) || options[key];
 		});
 
@@ -54,11 +54,11 @@ module.exports = function(grunt) {
 		}
 
 		// install the Kevoree NodeJS runtime
-		installRuntime(grunt, options, function(err) {
+		installRuntime(grunt, options, function (err) {
 			if (err) {
 				done(err);
 			} else {
-				installModule(grunt, options, function(err) {
+				installModule(grunt, options, function (err) {
 					if (err) {
 						done(err);
 					} else {
@@ -88,9 +88,25 @@ module.exports = function(grunt) {
 							// default logLevel to DEBUG
 							logger.setLevel('DEBUG');
 						}
-						var kevs = new KevScript(logger);
+						var cache = config.get('cache');
+						if (!cache) {
+							cache = {};
+							config.set('cache', cache);
+						}
+						if (!cache.root) {
+							cache.root = path.join(options.modulesPath, 'tdefs');
+						}
+						if (!cache.ttl) {
+							cache.ttl = 1000 * 60 * 60 * 24; // 24 hours
+						}
+
+						var registryResolver = KevScript.Resolvers.registryResolverFactory(logger);
+						// var fsResolver = KevScript.Resolvers.fsResolverFactory(logger, registryResolver);
+						var modelResolver = KevScript.Resolvers.modelResolverFactory(logger, registryResolver);
+						var tagResolver = KevScript.Resolvers.tagResolverFactory(logger, modelResolver);
+						var kevs = new KevScript(logger, { resolver: tagResolver });
 						var kevscript = grunt.file.read(options.kevscript);
-						kevs.parse(kevscript, localModel, options.ctxVars, function(err, model) {
+						kevs.parse(kevscript, localModel, options.ctxVars, function (err, model) {
 							if (err) {
 								done(err);
 							} else {
@@ -100,7 +116,7 @@ module.exports = function(grunt) {
 
 								var runtime = new Runtime(options.modulesPath, logger, resolver, kevs);
 
-								runtime.on('stopped', function() {
+								runtime.on('stopped', function () {
 									process.exit(0);
 								});
 
